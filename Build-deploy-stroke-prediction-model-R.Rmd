@@ -1,0 +1,371 @@
+---
+title: "Build and deploy a stroke prediction model using R"
+author: "Mohammad Ali Asif"
+output: pdf_document
+---
+
+# About Data Analysis Report
+
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, summary statistics and building the prediction models. The final report was completed on `r date()`. 
+
+**Data Description:**
+
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+
+
+# Task One: Import data and data preprocessing
+
+## Load data and install packages
+
+```{r}
+install.packages("tidyverse")
+install.packages("readr")
+install.packages("ggplot2")
+install.packages("hrbrthemes")
+
+install.packages("ROSE")
+install.packages("caret")
+```
+```{r}
+```
+
+
+
+## load library
+```{r}
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+
+library(ROSE)
+```
+
+```{r}
+library(caret)
+```
+
+## Load data
+
+```{r}
+df <- read.csv("healthcare-dataset-stroke-data.csv")
+```
+
+## Describe and explore the data (EDA)
+
+### colnames
+```{r}
+str(df)
+```
+
+
+### summary
+```{r}
+summary(df)
+```
+
+### head
+```{r}
+df  %>% head(20)
+```
+
+```{r}
+library(skimr)
+skim(df)
+```
+
+
+
+## Data Visualization
+```{r}
+```
+
+
+
+```{r}
+plot_area_age = ggplot(df, aes(x = age, color=stroke)) +
+  geom_histogram(bins = 30, stat="bin", color = "Blue", fill = "Violet") +
+  labs( title = "Age vr stroke")
+
+print(plot_area_age)
+```
+
+```{r}
+plot_area_bmi = ggplot(df, aes(x = bmi, color=stroke)) +
+  geom_area(stat="bin", color = "Blue", fill = "Violet") +
+  labs( title = "bmi vr stroke")
+
+print(plot_area_bmi)
+```
+
+
+```{r}
+
+# Create a stacked bar plot
+ggplot(df, aes(x = age, fill = gender)) +
+  geom_histogram(bins = 30, color = "Blue") +
+  labs(title = "Stacked Bar Plot", x = "Age", y = "Count") +
+  facet_grid(. ~ stroke)
+```
+
+
+
+```{r}
+plot_area_agl = ggplot(df, aes(x = avg_glucose_level,  fill = gender)) +
+  geom_histogram(stat="bin", color = "Blue", bins = 50) +
+  labs( title = "avg_glucose_level vr stroke")
+
+print(plot_area_agl)
+```
+
+```{r}
+ggplot(df, aes(smoking_status)) + geom_bar() 
+```
+
+```{r}
+ggplot(df, aes(x=work_type)) + geom_bar()
+
+```
+
+```{r}
+ggplot(df, aes(x=Residence_type)) + geom_bar()
+
+```
+
+
+```{r}
+ggplot(df, aes(x=heart_disease)) + geom_bar()
+
+```
+
+
+```{r}
+ggplot(df, aes(x=ever_married)) + geom_bar()
+
+```
+
+
+```{r}
+ggplot(df, aes(x=hypertension)) + geom_bar()
+
+```
+
+
+
+
+
+
+
+
+## Pre Processing
+converting categorical variables like gender, work_type, etc. to factors
+```{r}
+df$gender <-as.factor(df$gender)
+df$work_type <- as.factor(df$work_type)
+df$Residence_type <- as.factor(df$Residence_type)
+df$smoking_status <- as.factor(df$smoking_status)
+
+df <- select(df, -id)
+```
+
+### str
+```{r}
+str(df)
+```
+# handle unknown values of bmi
+```{r}
+# Assuming your dataframe is named 'data'
+# Check for missing values in the 'bmi' column
+missing_bmi <- is.na(df$bmi)
+
+# Replace missing values with the mean of the 'bmi' column
+mean_bmi <- mean(df$bmi, na.rm = TRUE)
+df$bmi[missing_bmi] <- mean_bmi
+
+# Convert 'bmi' from character to numeric
+df$bmi <- as.numeric(df$bmi)
+```
+
+
+## One-hot Encode categorical variables
+```{r}
+df <- df %>%
+  mutate(gender = as.numeric(gender) - 1,  # 0 for Female, 1 for Male
+         work_type = as.numeric(work_type) - 1,  #  Encode as needed
+         Residence_type = as.numeric(Residence_type) - 1, #  Encode as needed
+         smoking_status = as.numeric(smoking_status) - 1)  # Encode as needed
+
+```
+
+
+### str
+```{r}
+str(df)
+```
+# Corelation
+
+```{r}
+# Calculate the correlation matrix
+correlation_matrix <- cor(df)
+
+# Print the correlation matrix
+print(correlation_matrix)
+```
+# Reshape the correlation matrix into long format
+```{r}
+cm <- as.data.frame(as.table(correlation_matrix))
+colnames(cm) <- c("Var1", "Var2", "value")        #rename the columns of cm dataframe
+print(cm)
+```
+
+# Create a heatmap of the correlation matrix
+```{r}
+# Create a heat map with multiple variables on the x-axis
+ggplot(cm, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "black") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  #facet_wrap(~Var1, scales = "free_x")
+```
+
+## NORMALIZATION
+```{r}
+# Normalize numeric variables
+normalized_age <- scale(df$age)
+normalized_bmi <- scale(df$bmi)
+normalized_agl <- scale(df$avg_glucose_level)
+
+
+```
+
+
+```{r}
+df$age <- as.numeric(normalized_age)
+df$bmi <- as.numeric(normalized_bmi)
+df$avg_glucose_level <- as.numeric(normalized_agl)
+str(df)
+```
+
+
+
+
+```{r}
+view(df)
+```
+
+
+#handling imbalance data/Balancing of data
+```{r}
+table(df$stroke)
+```
+# Perform oversampling using ROSE
+```{r}
+oversampled_data <- ovun.sample(stroke ~ ., data = df, method = "over", N = 25 * table(df$stroke)[2], seed = 123)
+```
+
+# Extract the oversampled data
+```{r}
+df_oversampled <- oversampled_data$data
+```
+
+```{r}
+str(df_oversampled)
+```
+
+# Check the balance of classes in the oversampled data
+
+```{r}
+table(df_oversampled$stroke)
+```
+
+
+
+
+## Split the Data into Training and Testing Sets:
+```{r}
+set.seed(123)  # Set seed for reproducibility
+train_indices <- sample(1:nrow(df_oversampled), 0.75 * nrow(df_oversampled))
+train_data <- df_oversampled[train_indices, ]
+test_data <- df_oversampled[-train_indices, ]
+```
+
+```{r}
+print( str(train_data))
+```
+```{r}
+print(str(test_data))
+```
+
+
+
+# Build prediction models
+
+```{r}
+# Fit logistic regression model
+model <- glm(stroke ~ ., data = train_data, family = binomial)
+```
+
+## Make Prediction on Test Data
+```{r}
+predictions <- predict(model, newdata = test_data, type = "response")
+```
+
+```{r}
+print(model)
+```
+
+
+# Evaluate  models
+
+```{r}
+# Create a confusion matrix
+predicted_classes = ifelse(predictions > 0.5, 1, 0)
+confusion_matrix <- confusionMatrix(table(predicted = predicted_classes, actual = test_data$stroke), positive = "1")
+#confusion_matrix <- table(predicted = predicted_classes, actual = test_data$stroke)
+
+# Print the confusion matrix
+print(confusion_matrix)
+```
+
+
+
+# Other evaluation metrics
+```{r}
+sensitivity <- confusion_matrix$byClass["Sensitivity"]
+specificity <- confusion_matrix$byClass["Specificity"]
+accuracy <- confusion_matrix$overall["Accuracy"]
+
+cat("Sensitivity:", sensitivity, "\n")
+cat("Specificity:", specificity, "\n")
+cat("Accuracy:", accuracy, "\n")
+```
+
+
+
+
+# 5-fold cross-validation for logistic regression using caret
+
+```{r}
+cv_model <- train(stroke ~ ., data = df_oversampled, method = "rf", family = "binomial", trControl = trainControl(method = "cv", number = 5))
+
+# View the cross-validation results
+print(cv_model)
+```
+Note
+-> Lower RMSE and MAE is better
+-> Higher Rsquared is better
+
+
+# Findings and Conclusions
+
+
+This is my first time doing this type of work, so i am not quite sure about the success or failure of the model and i am working for improvement.
+I have tried to handling missing values, handling imbalance, normalizing data and on-code encoding in this project.
+
+
+
+
