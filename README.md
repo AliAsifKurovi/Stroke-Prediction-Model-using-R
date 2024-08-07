@@ -1,5 +1,5 @@
 # Stroke-Prediction-Model-using-R
-# Build and deploy a stroke prediction model using R
+## Build and deploy a stroke prediction model using R
 
 # Overview of My Stroke Prediction Model Project
 I undertook a project to build and deploy a stroke prediction model using R, focusing on several key steps:
@@ -39,15 +39,15 @@ I undertook a project to build and deploy a stroke prediction model using R, foc
 * Model Evaluation: I evaluated the model using multiple metrics and cross-validation, providing a well-rounded assessment of its performance.
 
 # Conclusions
-1. Data Quality and Insights:
+# 1. Data Quality and Insights:
 * My EDA and visualizations provided valuable insights into the data, such as the distribution of age, BMI, and glucose levels among stroke and non-stroke patients.
 * By handling missing values and class imbalance, I ensured the dataset was well-prepared for modeling.
 
-2.Model Performance:
+# 2.Model Performance:
 * The logistic regression model's performance can be assessed using sensitivity, specificity, and accuracy. If these metrics are satisfactory, it indicates a reliable model for stroke prediction.
 * Cross-validation results give an indication of the model's generalizability and robustness.
 
-3. Areas for Improvement:
+# 3. Areas for Improvement:
 * I plan to try other machine learning algorithms (e.g., Random Forest, SVM, Gradient Boosting) to potentially improve prediction accuracy.
 * I will explore feature engineering to create new features that might enhance model performance.
 * I intend to tune hyperparameters of the models to optimize their performance further.
